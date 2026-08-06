@@ -48,9 +48,9 @@
                     const data = JSON.parse(msg.data);
                     const id = data.displayId;
 
-                    if (data.type === "new_viewer") {
+                    if (data.type === "offer") {
                         console.log(`Configurando conexión limpia para Pantalla ID: ${id}`);
-                        
+
                         // Si ya existía una conexión previa colgada de ese ID, la cerramos
                         if (peerConnections.has(id)) {
                             peerConnections.get(id).close();
@@ -69,11 +69,10 @@
                             }
                         };
 
-                        // Crear oferta WebRTC dedicada para esta pantalla
-                        const offer = await pc.createOffer({ iceRestart: true });
-                        await pc.setLocalDescription(offer);
-                        
-                        ws.send(JSON.stringify({ type: "offer", displayId: id, offer }));
+                        await pc.setRemoteDescription(new RTCSessionDescription(data.offer));
+                        const answer = await pc.createAnswer();
+                        await pc.setLocalDescription(answer);
+                        ws.send(JSON.stringify({ type: "answer", displayId: id, answer}));
                     }
 
                     if (data.type === "answer") {

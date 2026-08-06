@@ -43,18 +43,30 @@ wss.on('connection', (ws, req) => {
 
         switch (data.type) {
             case 'offer':
-                // El emisor envía una oferta dirigida a una pantalla específica
-                const targetDisplay = displays.get(data.displayId);
-                if (targetDisplay && targetDisplay.readyState === WebSocket.OPEN) {
-                    targetDisplay.send(JSON.stringify({ type: 'offer', offer: data.offer }));
+                // display envía una oferta dirigida a broadcaster
+                if (!broadcaster || broadcaster.readyState !== WebSocket.OPEN) {
+                    break;
                 }
+            
+                broadcaster.send(JSON.stringify({
+                    type: 'offer',
+                    displayId: data.displayId,
+                    offer: data.offer
+                }));
                 break;
 
             case 'answer':
-                // La pantalla responde, le enviamos la respuesta al emisor indicando de qué ID proviene
-                if (broadcaster && broadcaster.readyState === WebSocket.OPEN) {
-                    broadcaster.send(JSON.stringify({ type: 'answer', displayId: data.displayId, answer: data.answer }));
+                // broadcaster envía una respuesta dirigida a un display
+                const targetDisplay = displays.get(data.displayId);
+
+                if (!targetDisplay || targetDisplay.readyState !== WebSocket.OPEN) {
+                    break;
                 }
+
+                targetDisplay.send(JSON.stringify({
+                    type: 'answer',
+                    answer: data.answer
+                }));
                 break;
 
             case 'candidate':
