@@ -9,7 +9,7 @@ const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
 
 // Servir los archivos HTML desde la misma carpeta donde ejecutes el script
-app.use(express.static(__dirname));
+app.use(express.static("public"));
 
 let broadcaster = null;
 let displays = new Map(); // Guarda las pantallas conectadas (ID -> WebSocket)

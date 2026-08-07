@@ -1,0 +1,16 @@
+body, html {
+	margin: 0; padding: 0; width: 100%; height: 100%;
+	background: black; overflow: hidden;
+}
+/* Contenedor que limita la visión a la pantalla actual */
+#viewport {
+	width: 100vw; height: 100vh;
+	position: relative; overflow: hidden;
+}
+/* El video se escala matemáticamente al tamaño del muro total */
+video {
+        position: absolute;
+        top: 0; left: 0;
+        transform-origin: top left;
+        object-fit: fill; /* Evita bandas negras, estirando el aspecto exacto del grid */
+}
