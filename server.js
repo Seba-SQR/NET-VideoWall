@@ -8,28 +8,80 @@ const server = http.createServer(app);
 // Unificamos Websockets y HTTP en el mismo servidor para evitar el error 'Upgrade Required'
 const wss = new WebSocket.Server({ server });
 
-// Servir los archivos HTML desde la misma carpeta donde ejecutes el script
-app.use(express.static("public"));
+const config = require("./config/config.json");
 
-let broadcaster = null;
-let displays = new Map(); // Guarda las pantallas conectadas (ID -> WebSocket)
+app.use("/css", express.static("public/css"));
+app.use("/js", express.static("public/js"));
+app.use("/assets", express.static("public/assets"));
+
+for (const [videowallId, videowall] of Object.entries(config.videowalls)) {
+
+    // Ruta del broadcaster
+    app.get(`/${videowallId}/broadcaster.html`, (req, res) => {
+        res.sendFile(path.join(__dirname, "public", "broadcaster.html"));
+    });
+
+    app.get(`/${videowallId}/config.json`, (req, res) => {
+            res.json({
+                vid: videowallId,
+                rows: videowall.rows,
+                cols: videowall.cols,
+            });
+        });
+
+    console.log(`Registered broadcaster: /${videowallId}/broadcaster.html`);
+
+    // Rutas de los displays
+    for (const [displayId, display] of Object.entries(videowall.displays)) {
+
+        app.get(`/${videowallId}/${displayId}/display.html`, (req, res) => {
+            res.sendFile(path.join(__dirname, "public", "display.html"));
+        });
+
+        app.get(`/${videowallId}/${displayId}/config.json`, (req, res) => {
+            res.json({
+                vid: videowallId,
+                did: displayId,
+                rows: videowall.rows,
+                cols: videowall.cols,
+                row: display.row,
+                col: display.col
+            });
+        });
+
+        console.log(`Registered display: /${videowallId}/${displayId}/display.html`);
+
+    }
+}
+
+let videowalls = new Map();
 
 wss.on('connection', (ws, req) => {
-    // Extraer parámetros de la URL de conexión, ej: ?role=display&id=1
+    // Extraer parámetros de la URL de conexión, ej: ?role=display&vid=vw1&did=1
     const urlParams = new URL(req.url, `http://${req.headers.host}`).searchParams;
     const role = urlParams.get('role');
-    const displayId = urlParams.get('id');
+    const videowallId = urlParams.get('vid');
+    const displayId = urlParams.get('did');
+
+    if (!videowalls.has(videowallId)) {
+        videowalls.set(videowallId, {
+            broadcaster: null,
+            displays: new Map()
+        });
+    }
+
+    const videowall = videowalls.get(videowallId);
 
     if (role === 'broadcaster') {
-        broadcaster = ws;
-        console.log('--- Emisor (Broadcaster) conectado ---');
+        videowall.broadcaster = ws;
+        console.log(`--- Emisor [ID: ${videowallId}] conectado ---`);
     } else if (role === 'display') {
-        displays.set(displayId, ws);
-        console.log(`--- Pantalla [ID: ${displayId}] conectada/recargada ---`);
+        videowall.displays.set(displayId, ws);
+        console.log(`--- Display [${videowallId}/${displayId}] conectado/recargado ---`);
         
         // Si el emisor ya está activo, le pedimos una oferta exclusiva para esta nueva pantalla
-        if (broadcaster && broadcaster.readyState === WebSocket.OPEN) {
-            broadcaster.send(JSON.stringify({ type: 'new_viewer', displayId }));
+        if (videowall.broadcaster && videowall.broadcaster.readyState === WebSocket.OPEN) {
+            videowall.broadcaster.send(JSON.stringify({ type: 'new_viewer', displayId }));
         }
     }
 
@@ -44,11 +96,11 @@ wss.on('connection', (ws, req) => {
         switch (data.type) {
             case 'offer':
                 // display envía una oferta dirigida a broadcaster
-                if (!broadcaster || broadcaster.readyState !== WebSocket.OPEN) {
+                if (!videowall.broadcaster || videowall.broadcaster.readyState !== WebSocket.OPEN) {
                     break;
                 }
             
-                broadcaster.send(JSON.stringify({
+                videowall.broadcaster.send(JSON.stringify({
                     type: 'offer',
                     displayId: data.displayId,
                     offer: data.offer
@@ -57,7 +109,7 @@ wss.on('connection', (ws, req) => {
 
             case 'answer':
                 // broadcaster envía una respuesta dirigida a un display
-                const targetDisplay = displays.get(data.displayId);
+                const targetDisplay = videowall.displays.get(data.displayId);
 
                 if (!targetDisplay || targetDisplay.readyState !== WebSocket.OPEN) {
                     break;
@@ -72,11 +124,11 @@ wss.on('connection', (ws, req) => {
             case 'candidate':
                 // Enrutamiento de candidatos ICE bidireccional
                 if (data.to === 'broadcaster') {
-                    if (broadcaster && broadcaster.readyState === WebSocket.OPEN) {
-                        broadcaster.send(JSON.stringify({ type: 'candidate', displayId: data.displayId, candidate: data.candidate }));
+                    if (videowall.broadcaster && videowall.broadcaster.readyState === WebSocket.OPEN) {
+                        videowall.broadcaster.send(JSON.stringify({ type: 'candidate', displayId: data.displayId, candidate: data.candidate }));
                     }
                 } else if (data.to === 'display') {
-                    const targetDisp = displays.get(data.displayId);
+                    const targetDisp = videowall.displays.get(data.displayId);
                     if (targetDisp && targetDisp.readyState === WebSocket.OPEN) {
                         targetDisp.send(JSON.stringify({ type: 'candidate', candidate: data.candidate }));
                     }
@@ -86,17 +138,15 @@ wss.on('connection', (ws, req) => {
     });
 
     ws.on('close', () => {
-        if (ws === broadcaster) {
-            broadcaster = null;
-            console.log('Emisor desconectado');
-        } else {
-            // Eliminar la pantalla del mapa cuando se cierra la pestaña
-            for (let [id, connectedWs] of displays.entries()) {
-                if (connectedWs === ws) {
-                    displays.delete(id);
-                    console.log(`Pantalla [ID: ${id}] desconectada`);
-                    break;
-                }
+        if (role === 'broadcaster') {
+            if (videowall.broadcaster === ws) {
+                videowall.broadcaster = null;
+                console.log(`--- Broadcaster [${videowallId}] desconectado ---`);
+            }
+        } else if (role === 'display') {
+            if (videowall.displays.get(displayId) === ws) {
+                videowall.displays.delete(displayId);
+                console.log(`--- Display [${videowallId}/${displayId}] desconectado ---`);
             }
         }
     });
@@ -105,5 +155,4 @@ wss.on('connection', (ws, req) => {
 // Levantar todo en el puerto 3000
 server.listen(3000, () => {
     console.log('Servidor del Video Wall corriendo en http://localhost:3000');
-    console.log('Abre http://localhost:3000/broadcaster.html para transmitir.');
 });

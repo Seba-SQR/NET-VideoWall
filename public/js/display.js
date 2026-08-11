@@ -1,11 +1,12 @@
-// 1. Configuración del Video Wall vía URL params. 
-// Ejemplo para Matriz 2x2: display.html?id=1&cols=2&rows=2&col=0&row=0
-const urlParams = new URLSearchParams(window.location.search);
-const displayId = urlParams.get('id') || "1";
-const totalCols = parseInt(urlParams.get('cols')) || 1; // Cuántas columnas totales tiene el muro
-const totalRows = parseInt(urlParams.get('rows')) || 1; // Cuántas filas totales tiene el muro
-const myCol = parseInt(urlParams.get('col')) || 0;       // Mi columna actual (Inicia en 0)
-const myRow = parseInt(urlParams.get('row')) || 0;       // Mi fila actual (Inicia en 0)
+const response = await fetch("./config.json");
+const config = await response.json();
+
+const videowallId = config.vid;
+const displayId = config.did;
+const totalRows = config.rows;
+const totalCols = config.cols;
+const myRow = config.row;
+const myCol = config.col;
 
 // 2. Aplicar magia CSS de recorte y escalado
 const video = document.getElementById("video");
@@ -15,7 +16,7 @@ video.style.transform = `translate(${-myCol * 100}vw, ${-myRow * 100}vh)`;
 
 // 3. Conexión de señalización dinámica
 const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-const ws = new WebSocket(`${protocol}//${window.location.host}?role=display&id=${displayId}`);
+const ws = new WebSocket(`${protocol}//${window.location.host}?role=display&vid=${videowallId}&did=${displayId}`);
 
 const iceConfig = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
 const pc = new RTCPeerConnection(iceConfig);

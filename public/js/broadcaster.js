@@ -1,3 +1,10 @@
+const response = await fetch("./config.json");
+const config = await response.json();
+
+const videowallId = config.vid;
+const totalRows = config.rows;
+const totalCols = config.cols;
+
 const startBtn = document.getElementById('startBtn');
 const statusDiv = document.getElementById('status');
         
@@ -20,7 +27,7 @@ startBtn.onclick = async () => {
 
         // Conexión dinámica por WebSocket (funciona local o por IP de red)
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        ws = new WebSocket(`${protocol}//${window.location.host}?role=broadcaster`);
+        ws = new WebSocket(`${protocol}//${window.location.host}?role=broadcaster&vid=${videowallId}`);
 
         ws.onopen = () => {
             statusDiv.innerText = "Transmitiendo. Esperando pantallas (displays)...";
