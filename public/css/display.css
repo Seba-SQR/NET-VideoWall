@@ -1,16 +1,24 @@
-body, html {
-	margin: 0; padding: 0; width: 100%; height: 100%;
-	background: black; overflow: hidden;
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
 }
-/* Contenedor que limita la visión a la pantalla actual */
-#viewport {
-	width: 100vw; height: 100vh;
-	position: relative; overflow: hidden;
+
+#videowall-wrapper {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: white;
 }
-/* El video se escala matemáticamente al tamaño del muro total */
-video {
-        position: absolute;
-        top: 0; left: 0;
-        transform-origin: top left;
-        object-fit: fill; /* Evita bandas negras, estirando el aspecto exacto del grid */
+
+#video {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }

@@ -1,2 +1,6 @@
 node_modules/
 temp/
+mediamtx/mediamtx
+mediamtx/mediamtx_.yml
+public/js/publisher.js
+public/js/reader.js

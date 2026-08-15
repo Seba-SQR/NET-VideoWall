@@ -1,0 +1,16 @@
+rtsp: true
+rtspAddress: :8554
+
+webrtc: true
+webrtcAddress: :8889
+webrtcLocalUDPAddress: :8189
+
+pathDefaults:
+  alwaysAvailable: true
+  alwaysAvailableTracks:
+    - codec: H264
+  
+paths:
+  vw1:
+  vw2:
+  vw3:
