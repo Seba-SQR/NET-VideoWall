@@ -1,5 +1,7 @@
-const response = await fetch("./config.json");
+const response = await fetch("./broadcaster.json");
 const config = await response.json();
+
+console.log(config);
 
 const startBtn = document.getElementById('startBtn');
 const statusDiv = document.getElementById('status');
@@ -28,7 +30,7 @@ startBtn.onclick = async () => {
         };
 
         publisher = new MediaMTXWebRTCPublisher({
-            url: new URL(`http://${window.location.hostname}:8889/${config.vid}/whip`),
+            url: new URL(`http://${config.mediaMtxServer}:${config.mediaMtxPort}/${config.mediaMtxPath}/whip`),
             stream: localStream,
 
             videoCodec: 'h264',

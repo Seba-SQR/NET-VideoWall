@@ -1,0 +1,26 @@
+{
+  "server": {
+    "port": 3000
+  },
+  "mediamtx": {
+    "server": "localhost",
+    "webrtc_address": "8889"
+  },
+  "videowalls": {
+    "sala_A": {
+      "mediamtx_path": "vw1",
+      "rows": 2,
+      "cols": 2
+    },
+    "sala_B": {
+      "mediamtx_path": "vw2",
+      "rows": 1,
+      "cols": 2
+    },
+    "eventos": {
+      "mediamtx_path": "vw3",
+      "rows": 3,
+      "cols": 2
+    }
+  }
+}
