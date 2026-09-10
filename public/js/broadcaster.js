@@ -3,6 +3,16 @@ const config = await response.json();
 
 console.log(config);
 
+const mtxBaseUrl = `http://${config.mediaMtxServer}:${config.mediaMtxPort}/${config.mediaMtxPath}`;
+
+await new Promise((resolve, reject) => {
+  const script = document.createElement("script");
+  script.src = `${mtxBaseUrl}/publisher.js`;
+  script.onload = resolve;
+  script.onerror = reject;
+  document.head.appendChild(script);
+});
+
 const startBtn = document.getElementById('startBtn');
 const statusDiv = document.getElementById('status');
 
@@ -30,14 +40,17 @@ startBtn.onclick = async () => {
         };
 
         publisher = new MediaMTXWebRTCPublisher({
-            url: new URL(`http://${config.mediaMtxServer}:${config.mediaMtxPort}/${config.mediaMtxPath}/whip`),
+            url: new URL(`${mtxBaseUrl}/whip`),
+            user: config.mediaMtxUser,
+            pass: config.mediaMtxPass,
+
             stream: localStream,
 
             videoCodec: 'h264',
             videoBitrate: 0,
             
             onConnected: () => {
-                statusDiv.innerText = `Transmitiendo pantalla hacia "${videowallId}" en H.264.`;
+                statusDiv.innerText = `Transmitiendo pantalla hacia "${config.videowallId}" en H.264.`;
             },
             onError: (err) => {
                 console.error("Error en MediaMTXWebRTCPublisher:", err);

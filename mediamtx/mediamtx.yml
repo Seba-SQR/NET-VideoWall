@@ -5,12 +5,21 @@ webrtc: true
 webrtcAddress: :8889
 webrtcLocalUDPAddress: :8189
 
+authMethod: internal
+
+authInternalUsers:
+  - user: user
+    pass: pass
+    permissions:
+      - action: publish
+        path: path1
+      - action: read
+        path: path1
+
 pathDefaults:
   alwaysAvailable: true
   alwaysAvailableTracks:
     - codec: H264
   
 paths:
-  vw1:
-  vw2:
-  vw3:
+  path1:

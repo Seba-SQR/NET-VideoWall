@@ -1,25 +1,19 @@
 {
   "server": {
-    "port": 3000
+    "port": 3000,
+    "user": "user",
+    "password": "pass"
   },
   "mediamtx": {
     "server": "localhost",
     "webrtc_address": "8889"
   },
   "videowalls": {
-    "sala_A": {
-      "mediamtx_path": "vw1",
+    "videowall1": {
+      "mediamtx_path": "path1",
+      "mediamtx_user": "user",
+      "mediamtx_pass": "pass",
       "rows": 2,
-      "cols": 2
-    },
-    "sala_B": {
-      "mediamtx_path": "vw2",
-      "rows": 1,
-      "cols": 2
-    },
-    "eventos": {
-      "mediamtx_path": "vw3",
-      "rows": 3,
       "cols": 2
     }
   }

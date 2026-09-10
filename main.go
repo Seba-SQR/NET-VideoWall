@@ -11,7 +11,9 @@ import (
 
 type Config struct {
     Server struct {
-        Port int `json:"port"`
+        Port     int    `json:"port"`
+        User     string `json:"user"`
+        Password string `json:"password"`
     } `json:"server"`
 
     Mediamtx struct {
@@ -22,8 +24,22 @@ type Config struct {
     Videowalls map[string]struct {
         Rows         int    `json:"rows"`
         Cols         int    `json:"cols"`
-        MediamtxPath string `json:"mediamtx_path"`
+        MediaMtxPath string `json:"mediamtx_path"`
+        MediaMtxUser string `json:"mediamtx_user"`
+        MediaMtxPass string `json:"mediamtx_pass"`
     } `json:"videowalls"`
+}
+
+func basicAuthMiddleware(next http.Handler, username, password string) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		user, pass, ok := r.BasicAuth()
+		if !ok || user != username || pass != password {
+			w.Header().Set("WWW-Authenticate", `Basic realm="Restricted Area"`)
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
 }
 
 func main() {
@@ -40,12 +56,10 @@ func main() {
 
     mux := http.NewServeMux()
 
-    // Servir archivos estáticos
     mux.Handle("GET /css/", http.StripPrefix("/css/", http.FileServer(http.Dir("public/css"))))
     mux.Handle("GET /js/", http.StripPrefix("/js/", http.FileServer(http.Dir("public/js"))))
     mux.Handle("GET /assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir("public/assets"))))
 
-    // Registro directo usando las variables del bucle
     for videowallId, videowall := range config.Videowalls {
 
         // Broadcaster HTML
@@ -60,7 +74,9 @@ func main() {
                 "videowallId":    videowallId,
                 "mediaMtxServer": config.Mediamtx.Server,
                 "mediaMtxPort":   config.Mediamtx.WebrtcAddress,
-                "mediaMtxPath":   videowall.MediamtxPath,
+                "mediaMtxPath":   videowall.MediaMtxPath,
+                "mediaMtxUser":   videowall.MediaMtxUser,
+                "mediaMtxPass":   videowall.MediaMtxPass,
             })
         })
 
@@ -91,7 +107,9 @@ func main() {
                     "displayRow":          row,
                     "mediaMtxServer":      config.Mediamtx.Server,
                     "mediaMtxPort":        config.Mediamtx.WebrtcAddress,
-                    "mediaMtxPath":        videowall.MediamtxPath,
+                    "mediaMtxPath":        videowall.MediaMtxPath,
+                    "mediaMtxUser":        videowall.MediaMtxUser,
+                    "mediaMtxPass":        videowall.MediaMtxPass,
                 })
             })
 
@@ -107,7 +125,9 @@ func main() {
     serverAddr := fmt.Sprintf(":%d", port)
     fmt.Printf("Servidor del Video Wall corriendo en http://localhost:%d\n", port)
 
-    if err := http.ListenAndServe(serverAddr, mux); err != nil {
+    authHandler := basicAuthMiddleware(mux, config.Server.User, config.Server.Password)
+
+    if err := http.ListenAndServe(serverAddr, authHandler); err != nil {
         log.Fatalf("Error al iniciar el servidor: %v", err)
     }
 }
