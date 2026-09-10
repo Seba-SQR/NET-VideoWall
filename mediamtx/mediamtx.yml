@@ -1,3 +1,5 @@
+#Sample mediamtx config file
+
 rtsp: true
 rtspAddress: :8554
 
